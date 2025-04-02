@@ -1,0 +1,80 @@
+processor 18F8722
+radix dec 
+// Hardware Configuration of our PIC18F8722 
+CONFIG OSC = HS
+CONFIG WDT = OFF
+CONFIG LVP = OFF
+    
+#include <xc.inc>
+// Defines
+
+PSECT udata_acs
+global x, y
+x: ds 1 ; switches byte
+y: ds 1
+    
+PSECT ResetVector, class=CODE, reloc=2 
+ResetVector:
+    GOTO L_MAIN
+ 
+PSECT Start, class=CODE, reloc=2
+L_MAIN:
+    ;;; Configure GPIOs
+    movlw 15
+    movwf ADCON1 ; Set all to digital input
+    
+    CLRF TRISF ; set All RF pins as OUTPUT
+    
+    MOVLW 11101111B
+    MOVWF TRISA ; set RA4 as OUTPUT
+    
+    MOVLW 00111100B
+    MOVWF TRISC ; set RC2-5 as INPUT
+    
+    MOVLW 11110011B
+    MOVWF TRISH ;  set RH4-7 as INPUT
+    
+    ;;; Program logic
+    ;; swithces configure
+L_LOOP:  
+    MOVFF PORTC, y
+    RRNCF y, F
+    RRNCF y, W
+    ANDLW 00001111B ; MASK 
+    MOVWF y
+    
+    movlw 11110000B ; MASK 
+    andwf PORTH, W
+    MOVWF x
+    SWAPF x, F
+   
+    
+    movf y, w
+    subwf x, w ; x - y
+    bz L_LED7_ON ; x = y
+    bc L_LED2_ON ; x>y
+    BRA  L_LED7_ON ; x<y
+    
+L_LED7_ON:
+    movlw 01000000B
+    movwf LATF
+    
+    movlw 00010000B
+    movwf LATA
+    
+    MOVLW 11101111B
+    movwf LATA
+    BRA L_LOOP
+    
+L_LED2_ON:
+    movlw 00000010B
+    movwf LATF
+    
+    movlw 00010000B
+    movwf LATA
+    
+    movlw 11101111B
+    movwf LATA
+    BRA L_LOOP
+    
+    

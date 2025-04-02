@@ -1,0 +1,83 @@
+processor 18F8722
+radix dec 
+    
+// Hardware Configuration of our PIC18F8722 
+CONFIG OSC=HS, FCMEN=OFF, IESO=OFF
+CONFIG BORV=3
+CONFIG WDT=OFF, WDTPS=1
+CONFIG MODE=MC, ADDRBW=ADDR20BIT, DATABW=DATA16BIT, WAIT=OFF
+CONFIG CCP2MX=PORTC, LPT1OSC=OFF, MCLRE=ON
+CONFIG STVREN=ON, LVP=OFF, XINST=OFF
+CONFIG CP0=OFF, CP1=OFF, CP2=OFF, CP3=OFF
+CONFIG CPB=OFF, CPD=OFF
+CONFIG WRT0=OFF, WRT0=OFF, WRT0=OFF, WRT0=OFF
+CONFIG WRTC=OFF
+CONFIG EBTR0=OFF, EBTR1=OFF, EBTR2=OFF, EBTR3=OFF
+CONFIG EBTRB=ON
+
+// Librabry
+#include <xc.inc>
+    
+// Defines
+PSECT udata_acs
+global SW
+SW: ds 1 ; switches 4MSB
+    
+// Code
+PSECT ResetVector, class=CODE, reloc=2 
+ResetVector:
+ GOTO L_MainProgram
+
+PSECT Start, class=CODE, reloc=2
+ L_MainProgram:
+    ;;; Configure GPIOs
+    MOVLW 15
+    MOVWF ADCON1 ; set all INPUT as DIGITAL INPUTS
+    
+    ;; SET 4 MSB (RH5-7) of switches as INPUT 
+    ;;	    and RH1 AS OUTPUT for Q1, Q2 Transistors
+    MOVLW 11111101B
+    MOVWF TRISH
+    
+    CLRF TRISF ; SET TRSIF as OUTPUT
+    
+    BSF LATH, 1
+    
+    ;;; 4 MSB switches values into SW
+    MOVF PORTH, W
+    ANDLW 11110000B ; MASK OFF the lower nibble, fill with 0
+    MOVWF SW
+    SWAPF SW, W ; move the upper nibble to lower nibble place
+    
+    SUBLW 12
+    BZ L_DISPLAY_E
+    BRA L_MainProgram
+    
+L_DISPLAY_E:
+    ;; Display pattern into LATF
+    MOVLW 00001110B ; byte pattern for E on 7segment display
+    MOVWF LATF
+    
+    ;; Turn ON Transistor Q2, ACTIVE LOW
+    BCF LATH, 1
+    
+    ;; Turn OFF Transistor Q2, ACTIVE LOW
+    BTG LATH, 1
+    
+    ;; Go back to the main program loop
+    BRA L_MainProgram
+    
+    
+    
+    
+    
+   
+    
+    
+    
+    
+    
+    
+L_MainLoop: 
+     BRA L_MainLoop // Loop back to the start
+    end L_MainLoop

@@ -1,0 +1,53 @@
+// MCE1 Handbook - Exercise 27.6
+
+    
+processor 18F8722
+radix dec
+    
+// Hardware Configuration of our PIC18F8722
+CONFIG OSC=HS, FCMEN=OFF, IESO=OFF
+CONFIG BORV=3
+CONFIG WDT=OFF, WDTPS=1
+CONFIG MODE=MC, ADDRBW=ADDR20BIT, DATABW=DATA16BIT, WAIT=OFF
+CONFIG CCP2MX=PORTC, LPT1OSC=OFF, MCLRE=ON
+CONFIG STVREN=ON, LVP=OFF, XINST=OFF
+CONFIG CP0=OFF, CP1=OFF, CP2=OFF, CP3=OFF
+CONFIG CPB=OFF, CPD=OFF
+CONFIG WRT0=OFF, WRT0=OFF, WRT0=OFF, WRT0=OFF
+CONFIG WRTC=OFF
+CONFIG EBTR0=OFF, EBTR1=OFF, EBTR2=OFF, EBTR3=OFF
+CONFIG EBTRB=ON
+
+#include <xc.inc>
+    
+PSECT udata_acs
+global var_100us_count
+var_100us_count: ds 1
+    
+// Code
+PSECT ResetVector, class=CODE, reloc=2
+ResetVector:
+ GOTO start
+
+PSECT Start, class=CODE, reloc=2
+start: 
+    CALL SUB_100us_delay
+    
+    
+  
+    bra start
+    
+SUB_100us_delay: ; 100us / 400 ns = 250 instruction cycles
+    movlw  49; 1 cycle
+    movwf var_100us_count ; 1c
+    
+L_innerloop_100us:
+    nop; 1c
+    nop; 1c
+    decf var_100us_count ; 1c
+    bnz L_innerloop_100us ; 2c ; last 1c
+    
+    return ; call + return ; 4c
+
+ 
+ end

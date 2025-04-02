@@ -1,0 +1,109 @@
+// MCE1 Handbook - Exercise 27.6
+    
+// my notation: 'c' means number of instruction cycle
+    
+processor 18F8722
+radix dec
+    
+// Hardware Configuration of our PIC18F8722
+CONFIG OSC=HS, FCMEN=OFF, IESO=OFF
+CONFIG BORV=3
+CONFIG WDT=OFF, WDTPS=1
+CONFIG MODE=MC, ADDRBW=ADDR20BIT, DATABW=DATA16BIT, WAIT=OFF
+CONFIG CCP2MX=PORTC, LPT1OSC=OFF, MCLRE=ON
+CONFIG STVREN=ON, LVP=OFF, XINST=OFF
+CONFIG CP0=OFF, CP1=OFF, CP2=OFF, CP3=OFF
+CONFIG CPB=OFF, CPD=OFF
+CONFIG WRT0=OFF, WRT0=OFF, WRT0=OFF, WRT0=OFF
+CONFIG WRTC=OFF
+CONFIG EBTR0=OFF, EBTR1=OFF, EBTR2=OFF, EBTR3=OFF
+CONFIG EBTRB=ON
+
+#include <xc.inc>
+    
+PSECT udata_acs
+global var_0_1ms_counter, var_1ms_counter, num
+var_0_1ms_counter: ds 1
+var_1ms_counter: ds 1
+num: ds 1
+    
+// Code
+PSECT ResetVector, class=CODE, reloc=2
+ResetVector:
+    GOTO L_MainProgram
+
+PSECT Start, class=CODE, reloc=2
+L_MainProgram: 
+    ;;; GPIOs configurations
+    movlw 15
+    MOVWF ADCON1 ; ADCON1 pins as DIGITAL INPUT
+    CLRF TRISF ; RF port as OUTPUT
+    bcf TRISA, 4 ; RA4 as OUTPUT
+    BSF TRISB, 0 ; RB0 as INPUT ; PB2
+    BSF TRISJ, 5 ; RJ5 as INPUT ; PB1
+    
+    ;;; initialisation
+    movlw 0
+    movwf num ; num = 0
+
+    
+    ;;; PBs
+    BTFSS PORTB, 0
+    BRA L_INC
+    
+    BRA L_MainProgram
+    
+L_INC:
+    movff num, LATF; num -> LATF
+    BSF LATA, 4 ; turn ON Transisitor Q3, ACTIVE HIGH
+    CALL SUB_5ms_delay
+    
+    BTFSS PORTJ, 5
+    BRA L_FREEZE
+        
+    BCF LATA, 4 ; turn ON Transisitor Q3, ACTIVE HIGH
+    CALL SUB_5ms_delay
+	
+    BTFSS PORTJ, 5
+    CALL L_FREEZE
+    
+    incf num, f
+      
+    BRA L_INC
+
+;;; SUBROUTINES
+    
+L_FREEZE:
+    movff num, LATF; num -> LATF
+    BSF LATA, 4 ; turn ON Transisitor Q3, ACTIVE HIGH
+    
+    BTFSS PORTB, 0
+    BRA L_INC
+    
+    BRA L_FREEZE
+    
+    
+SUB_0_1ms_delay: ; 0.1ms / 400 ns = 250 c
+    movlw 49 ; 1c
+    movwf var_0_1ms_counter ; 1c
+L_0_1ms_inner:
+    nop; 1c
+    nop; 1c
+    decf var_0_1ms_counter ; 1c
+    bnz L_0_1ms_inner    ; 2c ; 1c for last
+    RETURN ;CALL, RETURN 4c
+    
+    
+    
+SUB_5ms_delay: ; 5ms / 400 ns = 12500 c = 250c * 50
+    movlw 49
+    movwf var_1ms_counter
+L_5ms_inner:
+    call SUB_0_1ms_delay
+    nop;
+    nop;
+    decf var_1ms_counter ; 1c
+    bnz L_5ms_inner    ; 2c ; 1c for last
+    RETURN ;CALL, RETURN 4c
+
+end

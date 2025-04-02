@@ -1,0 +1,101 @@
+23.3.3 Example-comparison of twos-complement 8–bit number, with I/O.
+An example of a number comparison that incorporates both input and output.
+Revise the MCE1 theory and lab chapters on bit rotation, combining values, and Program Flow-1.
+The task is to test the value read from the 8 switches.
+• View the switches’ bit pattern as an 8-bit twos complement representation.
+• If it is a positive number, light up LED8
+• If it is negative light LED7
+• If the value is -2 light up both LED7 & LED8
+
+
+processor 18F8722
+radix dec 
+// Hardware Configuration of our PIC18F8722 
+CONFIG OSC = HS
+CONFIG WDT = OFF
+CONFIG LVP = OFF
+    
+#include <xc.inc>
+// Defines
+
+PSECT udata_acs
+global SW
+SW: ds 1 ; switches byte
+    
+PSECT ResetVector, class=CODE, reloc=2 
+ResetVector:
+    GOTO L_MAIN
+ 
+PSECT Start, class=CODE, reloc=2
+L_MAIN:
+    ;;; Configure GPIOs
+    movlw 15
+    movwf ADCON1 ; Set all to digital input
+    
+    CLRF TRISF ; set All RF pins as OUTPUT
+    
+    MOVLW 11101111B
+    MOVWF TRISA ; set RA4 as OUTPUT
+    
+    MOVLW 00111100B
+    MOVWF TRISC ; set RC2-5 as INPUT
+    
+    MOVLW 11110011B
+    MOVWF TRISH ;  set RH4-7 as INPUT
+    
+    ;;; Program logic
+    ;; swithces configure
+L_LOOP:  
+    MOVFF PORTC, SW
+    RRNCF SW, F
+    RRNCF SW, W
+    ANDLW 00001111B ; MASK TO CLEAR THE FRONT 4 BITS OF SW
+    MOVWF SW
+    
+    movlw 11110000B
+    andwf PORTH, w
+    IORWF SW, F ; APPENED THE RH4-7 TO THE FIRST 4 BITS OF SW
+    ;COMF SW, F
+    
+;; logic to LIGHT UP LED8
+    BTFSS SW, 7
+    BRA L_POSTIVE_LED8
+    MOVF SW, W
+   ADDLW 2
+    BZ L_LED78_ON
+    BRA L_NEGATIVE_LED7    
+    
+L_POSTIVE_LED8:
+    MOVLW 10000000B
+    MOVWF LATF
+    
+    MOVLW 00010000B
+    MOVWF LATA ; turn on Transisitor Q3 - ACTIVE HIGH
+    MOVLW 11101111B
+    movwf LATA ; turn off Transisitor Q3 - ACTIVE HIGH
+    
+    BRA L_LOOP
+    
+L_NEGATIVE_LED7:
+    MOVLW 01000000B
+    MOVWF LATF
+    
+    MOVLW 00010000B
+    MOVWF LATA ; turn on Transisitor Q3 - ACTIVE HIGH
+    MOVLW 11101111B
+
+    movwf LATA ; turn off Transisitor Q3 - ACTIVE HIGH
+    
+    BRA L_LOOP
+
+L_LED78_ON:
+    MOVLW 11000000B
+    MOVWF LATF
+    
+    MOVLW 00010000B
+    MOVWF LATA ; turn on Transisitor Q3 - ACTIVE HIGH
+    MOVLW 11101111B
+
+    movwf LATA ; turn off Transisitor Q3 - ACTIVE HIGH
+    
+    BRA L_LOOP

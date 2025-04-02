@@ -1,0 +1,104 @@
+processor 18F8722
+radix dec
+
+// Hardware Configuration of our PIC18F8722 
+CONFIG OSC=HS, FCMEN=OFF, IESO=OFF
+CONFIG BORV=3
+CONFIG WDT=OFF, WDTPS=1
+CONFIG MODE=MC, ADDRBW=ADDR20BIT, DATABW=DATA16BIT, WAIT=OFF
+CONFIG CCP2MX=PORTC, LPT1OSC=OFF, MCLRE=ON
+CONFIG STVREN=ON, LVP=OFF, XINST=OFF
+CONFIG CP0=OFF, CP1=OFF, CP2=OFF, CP3=OFF
+CONFIG CPB=OFF, CPD=OFF
+CONFIG WRT0=OFF, WRT0=OFF, WRT0=OFF, WRT0=OFF
+CONFIG WRTC=OFF
+CONFIG EBTR0=OFF, EBTR1=OFF, EBTR2=OFF, EBTR3=OFF
+CONFIG EBTRB=ON
+    
+#include <xc.inc>   
+    
+// Defines
+PSECT udata_acs
+global SW
+SW: ds 1   
+    
+// Code
+PSECT ResetVector, class=CODE, reloc=2 
+ResetVector:
+ GOTO L_MainProgram
+ 
+PSECT Start, class=CODE, reloc=2
+L_MainProgram:
+    ;;; configure GPIOs
+    movlw 15
+    movwf ADCON1 ; set all ADCON1 pins to be DIGITAL INPUT
+    
+    CLRF TRISF ; set RF0-7 to be OUTPUT
+    
+    MOVLW 11101111B
+    MOVWF TRISA ; set RA4 to be OUTPUT
+
+    MOVLW 11111100B
+    MOVWF TRISH ; set RH0-1 to be OUTPUT, RH5-7 to be INPUT
+    
+    MOVLW 00111100B
+    MOVWF TRISC ; set RC2-5 to be INPUT
+        
+    MOVLW 00000001B
+    MOVWF TRISB ; set RB0 to be INPUT
+    
+    MOVLW 9
+    MOVWF 0x20
+   
+L_MAIN:
+    CLRF SW
+    
+    ;;; LOGIC 1: PB2 pressed to display Left 7Segment Display
+    BTFSS PORTB, 0
+    CALL L_LEFT_DISPLAY_L
+    
+    ;;; LOGIC 2: display 9 if lower niblle of switch equal unsigned format 9
+    MOVFF PORTC, SW
+    RRNCF SW, F
+    RRNCF SW, W
+    ANDLW 00001111B ; MASK OFF upper nibble
+    CPFSEQ 0x20
+    BRA LOGIC3
+    CALL L_RIGHT_DISPLAY_9 ; if SW = 9, then Branch
+    
+LOGIC3:
+    ;;; LOGIC 3: turn on LED7 if SW7 set to 1
+    BTFSC PORTH, 7
+    CALL L_LED7_ON
+
+    BRA L_MAIN    
+
+L_LEFT_DISPLAY_L:
+    MOVLW 10001111B ; binary pattern for 'L' display
+    MOVWF LATF
+    
+    MOVLW 11111101B
+    MOVWF LATH ; RH1 LOW, turn ON transistor Q2 ACTIVE LOW
+    BTG LATH, 1 ; RH1 HIGH, turn OFF transistor Q2 ACTIVE LOW
+    RETURN
+    
+L_RIGHT_DISPLAY_9:
+    MOVLW 00100100B; binary pattern for '9' display
+    MOVWF LATF
+    
+    MOVLW 11111110B
+    MOVWF LATH ; RH0 LOW, turn ON transistor Q2 ACTIVE LOW
+    BTG LATH, 0 ; RH0 HIGH, turn OFF transistor Q2 ACTIVE LOW
+    RETURN
+
+L_LED7_ON:
+    MOVLW 01000000B
+    MOVWF LATF
+    
+    MOVLW 00010000B
+    MOVWF LATA ; RA4 HIGH, turn ON transistor Q2 ACTIVE HIGH 
+    MOVLW 00000000B
+    MOVWF LATA ; RA4 LOW, turn OFF transistor Q2 ACTIVE HIGH
+    RETURN
+
+END
