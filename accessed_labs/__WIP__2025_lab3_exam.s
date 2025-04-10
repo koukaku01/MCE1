@@ -1,4 +1,12 @@
-// INCOMPLETE CODE WITH BUGS AND LOGIC ERRORS
+// WIP: INCOMPLETE CODE WITH BUGS AND LOGIC ERRORS
+
+// TASKS
+//    Start with the right-most LED on, but nothing should happen until the right-most toggle switch SW1[0] is set to 1 (the upper part of the switch is pressed).
+//    Once the right-most toggle switch is on, then continue as below.
+//    Move the “on” LED to the left, waiting for 320 ms, and repeat the movement to the left. The LEDs should not be turned off between movements.
+//    Once the left-most LED (LED8) is lit, turn on all the LEDs on and stop there.
+//    At any point, if the right-most toggle switch SW1[0] is set to zero, the program will reset (LED variable=0), ready to go again.
+
 processor 18F8722
 radix dec
 
